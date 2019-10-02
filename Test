@@ -1,0 +1,48 @@
+
+model = ExtAPI.DataModel.Project.Model
+analysis = model.Analyses[0]
+meshdata = analysis.MeshData
+nsel = ExtAPI.DataModel.Tree.FirstActiveObject
+
+
+
+node_ids = []
+for id in nsel.Ids: node_ids.extend(meshdata.MeshRegionById(id).NodeIds)
+node_ids = list(set(node_ids))
+nodes = [meshdata.NodeById(id) for id in node_ids]
+
+#locations, in this example all the points are in xz plane, y = 0.01
+locations = [[0.12, 0.01, 0.17], [0.5, 0.01, 0.25]]
+
+
+closest_node_ids = []
+for loc in locations:
+    distances = []
+    for node in nodes:
+        node_loc = [node.X, node.Y, node.Z]
+        distances.append(sqrt((node_loc[0] - loc[0])**2 + (node_loc[1] - loc[1])**2 + (node_loc[2] - loc[2])**2))
+
+
+    min_index = distances.index(min(distances))
+    closest_node_id = node_ids[min_index]
+    print(closest_node_id)
+    closest_node_ids.append(closest_node_id)
+
+
+
+for node_id in closest_node_ids:
+		nsel = model.AddNamedSelection()
+		nsel.Name = "Node_" + str(node_id)
+		nsel.Location = ExtAPI.SelectionManager.CreateSelectionInfo(SelectionTypeEnum.WorksheetSpecific)
+		ws = nsel.Location
+		ws.AddRow()
+		ws.SetEntityType(0, NamedSelectionWorksheetEntityType.MeshNode)
+		ws.SetCriterion(0, NamedSelectionWorksheetCriterion.NodeId)
+		ws.SetOperator(0, NamedSelectionWorksheetOperator.Equal)
+		ws.SetValue(0, node_id)
+		ws.Generate()
+
+
+
+
+
